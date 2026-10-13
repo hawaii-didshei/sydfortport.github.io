@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://sydfortportgithubio.vercel.app", "http://localhost:3000", "http://127.0.0.1:5500"],
+    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Authorization", "x-firebase-storage-version", "x-goog-upload-protocol", "x-goog-upload-command", "x-goog-upload-offset"]
+  }
+]
