@@ -20,20 +20,34 @@ function randomCode() {
 }
 
 async function createRoom() {
-  const mode = document.getElementById('create-mode').value;
-  const roomCode = randomCode();
-  const judgeId = 'judge-' + Date.now();
-  await createRoomRecord(roomCode, mode, judgeId);
-  currentRoomCode = roomCode;
-  currentUser = {
-    player_id: judgeId,
-    nickname: 'Судья',
-    role: 'judge',
-    avatar_url: ''
-  };
-  const room = await findRoom(roomCode);
-  currentRoomRecordId = room.id;
-  enterCourt();
+  const err = document.getElementById('create-error');
+  err.textContent = '';
+  try {
+    const mode = document.getElementById('create-mode').value;
+    const roomCode = randomCode();
+    const judgeId = 'judge-' + Date.now();
+    const created = await createRoomRecord(roomCode, mode, judgeId);
+    if (created && created.message && created.message !== 'success') {
+      err.textContent = 'Ошибка: ' + created.message;
+      return;
+    }
+    const room = await findRoom(roomCode);
+    if (!room) {
+      err.textContent = 'Комната не создалась. Проверь таблицу Rooms.';
+      return;
+    }
+    currentRoomCode = roomCode;
+    currentRoomRecordId = room.id;
+    currentUser = {
+      player_id: judgeId,
+      nickname: 'Судья',
+      role: 'judge',
+      avatar_url: ''
+    };
+    enterCourt();
+  } catch (e) {
+    err.textContent = 'Ошибка: ' + e.message;
+  }
 }
 
 async function joinRoom() {
@@ -49,40 +63,47 @@ async function joinRoom() {
     return;
   }
 
-  const room = await findRoom(code);
-  if (!room) {
-    err.textContent = 'Комната не найдена';
-    return;
+  try {
+    const room = await findRoom(code);
+    if (!room) {
+      err.textContent = 'Комната не найдена';
+      return;
+    }
+    const avatarUrl = await cropToSquare(file);
+    const playerId = 'player-' + Date.now();
+    await addPlayerRecord(code, nick, avatarUrl, role);
+    currentRoomCode = code;
+    currentRoomRecordId = room.id;
+    currentUser = {
+      player_id: playerId,
+      nickname: nick,
+      role: role,
+      avatar_url: avatarUrl
+    };
+    enterCourt();
+  } catch (e) {
+    err.textContent = 'Ошибка: ' + e.message;
   }
-
-  const avatarUrl = await cropToSquare(file);
-  const playerId = 'player-' + Date.now();
-  await addPlayerRecord(code, nick, avatarUrl, role);
-
-  currentRoomCode = code;
-  currentUser = {
-    player_id: playerId,
-    nickname: nick,
-    role: role,
-    avatar_url: avatarUrl
-  };
-  currentRoomRecordId = room.id;
-  enterCourt();
 }
 
 function enterCourt() {
   showCourt();
   refreshAll();
+  if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(refreshAll, 3000);
 }
 
 async function refreshAll() {
-  const players = await getPlayers(currentRoomCode);
-  const evidence = await getEvidence(currentRoomCode);
-  const messages = await getMessages(currentRoomCode);
-  renderPlayers(players);
-  renderEvidence(evidence);
-  renderMessages(messages);
+  try {
+    const players = await getPlayers(currentRoomCode);
+    const evidence = await getEvidence(currentRoomCode);
+    const messages = await getMessages(currentRoomCode);
+    renderPlayers(players);
+    renderEvidence(evidence);
+    renderMessages(messages);
+  } catch (e) {
+    console.log('refresh error', e);
+  }
 }
 
 function renderPlayers(players) {
