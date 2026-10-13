@@ -1,4 +1,4 @@
-const API_URL = 'https://api.tabrica.ru/public/v1';
+const API_URL = 'https://tabrica.ru/orgs/sudy-fortport/db/167';
 const TOKEN = 'tab_kO8PuBTFFdzl84B1ptFqEU5I1xVUZrE1XXMnCfkQLUjoU7r2PkQEdxiooxHsuUFJ';
 const DATABASE_ID = 167;
 
