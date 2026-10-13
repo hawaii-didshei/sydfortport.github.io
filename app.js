@@ -26,14 +26,10 @@ async function createRoom() {
     const mode = document.getElementById('create-mode').value;
     const roomCode = randomCode();
     const judgeId = 'judge-' + Date.now();
-    const created = await createRoomRecord(roomCode, mode, judgeId);
-    if (created && created.message && created.message !== 'success') {
-      err.textContent = 'Ошибка: ' + created.message;
-      return;
-    }
+    await createRoomRecord(roomCode, mode, judgeId);
     const room = await findRoom(roomCode);
     if (!room) {
-      err.textContent = 'Комната не создалась. Проверь таблицу Rooms.';
+      err.textContent = 'Комната не создалась';
       return;
     }
     currentRoomCode = roomCode;
@@ -69,8 +65,9 @@ async function joinRoom() {
       err.textContent = 'Комната не найдена';
       return;
     }
-    const avatarUrl = await cropToSquare(file);
     const playerId = 'player-' + Date.now();
+    const dataUrl = await cropToSquare(file);
+    const avatarUrl = await uploadImage('avatars/' + playerId + '.jpg', dataUrl);
     await addPlayerRecord(code, nick, avatarUrl, role);
     currentRoomCode = code;
     currentRoomRecordId = room.id;
@@ -90,7 +87,7 @@ function enterCourt() {
   showCourt();
   refreshAll();
   if (refreshTimer) clearInterval(refreshTimer);
-  refreshTimer = setInterval(refreshAll, 3000);
+  refreshTimer = setInterval(refreshAll, 5000);
 }
 
 async function refreshAll() {
@@ -208,7 +205,9 @@ async function addEvidence() {
   const title = document.getElementById('evidence-title').value.trim();
   const file = document.getElementById('evidence-file').files[0];
   if (!title || !file) return;
-  const imageUrl = await cropToSquare(file);
+  const dataUrl = await cropToSquare(file);
+  const path = 'evidence/' + currentRoomCode + '-' + Date.now() + '.jpg';
+  const imageUrl = await uploadImage(path, dataUrl);
   await addEvidenceRecord(currentRoomCode, currentUser.player_id, title, imageUrl);
   document.getElementById('evidence-title').value = '';
   document.getElementById('evidence-file').value = '';
@@ -227,7 +226,7 @@ async function sendMessage() {
 async function finishCourt() {
   if (!confirm('Огласить приговор?')) return;
   await finishRoom(currentRoomRecordId);
-  alert('Суд завершён. Комната удалится через час.');
+  alert('Суд завершён. Комната удалится в течение 24 часов.');
 }
 
 function copyInvite() {
@@ -251,9 +250,9 @@ function cropToSquare(file) {
         const oy = (img.height - size) / 2;
         ctx.drawImage(img, ox, oy, size, size, 0, 0, size, size);
         const small = document.createElement('canvas');
-        small.width = 128;
-        small.height = 128;
-        small.getContext('2d').drawImage(canvas, 0, 0, 128, 128);
+        small.width = 256;
+        small.height = 256;
+        small.getContext('2d').drawImage(canvas, 0, 0, 256, 256);
         resolve(small.toDataURL('image/jpeg', 0.7));
       };
       img.src = e.target.result;
