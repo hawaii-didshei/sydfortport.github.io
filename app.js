@@ -1,7 +1,39 @@
+import {
+  createRoomRecord,
+  findRoom,
+  finishRoom,
+  addPlayerRecord,
+  getPlayers,
+  addEvidenceRecord,
+  getEvidence,
+  sendMessageRecord,
+  getMessages,
+  uploadImage
+} from './api.js';
+
 let currentRoomCode = '';
 let currentUser = null;
 let currentRoomRecordId = null;
 let refreshTimer = null;
+let isJudgeFlow = false;
+
+window.showCreate = function() {
+  document.getElementById('create-error').textContent = '';
+  show('screen-create');
+};
+
+window.showJoin = function() {
+  if (!isJudgeFlow) {
+    document.getElementById('join-title').textContent = 'Вход в суд';
+    document.getElementById('join-code').disabled = false;
+    document.getElementById('join-role-field').classList.remove('hidden');
+    document.getElementById('join-role').value = 'spectator';
+    document.getElementById('join-nick').value = '';
+    document.getElementById('join-avatar').value = '';
+    document.getElementById('join-error').textContent = '';
+  }
+  show('screen-join');
+};
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(function(el) {
@@ -10,16 +42,11 @@ function show(id) {
   document.getElementById(id).classList.remove('hidden');
 }
 
-function showMenu() { show('screen-menu'); }
-function showCreate() { show('screen-create'); }
-function showJoin() { show('screen-join'); }
-function showCourt() { show('screen-court'); }
-
 function randomCode() {
   return 'court-' + Math.random().toString(36).substring(2, 8);
 }
 
-async function createRoom() {
+window.createRoom = async function() {
   const err = document.getElementById('create-error');
   err.textContent = '';
   try {
@@ -27,26 +54,24 @@ async function createRoom() {
     const roomCode = randomCode();
     const judgeId = 'judge-' + Date.now();
     await createRoomRecord(roomCode, mode, judgeId);
-    const room = await findRoom(roomCode);
-    if (!room) {
-      err.textContent = 'Комната не создалась';
-      return;
-    }
-    currentRoomCode = roomCode;
-    currentRoomRecordId = room.id;
-    currentUser = {
-      player_id: judgeId,
-      nickname: 'Судья',
-      role: 'judge',
-      avatar_url: ''
-    };
-    enterCourt();
+
+    isJudgeFlow = true;
+    document.getElementById('join-title').textContent = 'Создание судьи';
+    document.getElementById('join-code').value = roomCode;
+    document.getElementById('join-code').disabled = true;
+    document.getElementById('join-role-field').classList.add('hidden');
+    document.getElementById('join-role').value = 'judge';
+    document.getElementById('join-nick').value = '';
+    document.getElementById('join-avatar').value = '';
+    document.getElementById('join-error').textContent = '';
+
+    show('screen-join');
   } catch (e) {
     err.textContent = 'Ошибка: ' + e.message;
   }
-}
+};
 
-async function joinRoom() {
+window.joinRoom = async function() {
   const code = document.getElementById('join-code').value.trim();
   const nick = document.getElementById('join-nick').value.trim();
   const role = document.getElementById('join-role').value;
@@ -65,10 +90,12 @@ async function joinRoom() {
       err.textContent = 'Комната не найдена';
       return;
     }
-    const playerId = 'player-' + Date.now();
+
+    const playerId = (role === 'judge' ? 'judge-' : 'player-') + Date.now();
     const dataUrl = await cropToSquare(file);
     const avatarUrl = await uploadImage('avatars/' + playerId + '.jpg', dataUrl);
     await addPlayerRecord(code, nick, avatarUrl, role);
+
     currentRoomCode = code;
     currentRoomRecordId = room.id;
     currentUser = {
@@ -81,10 +108,10 @@ async function joinRoom() {
   } catch (e) {
     err.textContent = 'Ошибка: ' + e.message;
   }
-}
+};
 
 function enterCourt() {
-  showCourt();
+  show('screen-court');
   refreshAll();
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(refreshAll, 5000);
@@ -193,15 +220,15 @@ function renderMessages(messages) {
   list.scrollTop = list.scrollHeight;
 }
 
-function toggleEvidence() {
+window.toggleEvidence = function() {
   document.getElementById('evidence-modal').classList.toggle('hidden');
-}
+};
 
-function toggleChat() {
+window.toggleChat = function() {
   document.getElementById('chat-modal').classList.toggle('hidden');
-}
+};
 
-async function addEvidence() {
+window.addEvidence = async function() {
   const title = document.getElementById('evidence-title').value.trim();
   const file = document.getElementById('evidence-file').files[0];
   if (!title || !file) return;
@@ -212,28 +239,28 @@ async function addEvidence() {
   document.getElementById('evidence-title').value = '';
   document.getElementById('evidence-file').value = '';
   refreshAll();
-}
+};
 
-async function sendMessage() {
+window.sendMessage = async function() {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
   if (!text) return;
   await sendMessageRecord(currentRoomCode, currentUser.player_id, currentUser.nickname, text);
   input.value = '';
   refreshAll();
-}
+};
 
-async function finishCourt() {
+window.finishCourt = async function() {
   if (!confirm('Огласить приговор?')) return;
   await finishRoom(currentRoomRecordId);
   alert('Суд завершён. Комната удалится в течение 24 часов.');
-}
+};
 
-function copyInvite() {
+window.copyInvite = function() {
   const link = window.location.origin + window.location.pathname + '?room=' + currentRoomCode;
   navigator.clipboard.writeText(link);
   alert('Ссылка скопирована: ' + link);
-}
+};
 
 function cropToSquare(file) {
   return new Promise(function(resolve) {
@@ -266,8 +293,9 @@ window.addEventListener('load', function() {
   const code = params.get('room');
   if (code) {
     document.getElementById('join-code').value = code;
+    isJudgeFlow = false;
     showJoin();
   } else {
-    showMenu();
+    show('screen-menu');
   }
 });
