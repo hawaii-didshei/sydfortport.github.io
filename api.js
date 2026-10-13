@@ -1,112 +1,133 @@
-const API_URL = 'https://tabrica.ru/orgs/sudy-fortport/db/167';
-const TOKEN = 'tab_kO8PuBTFFdzl84B1ptFqEU5I1xVUZrE1XXMnCfkQLUjoU7r2PkQEdxiooxHsuUFJ';
-const DATABASE_ID = 167;
+import { app } from './firebase.js';
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  where,
+  doc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp,
+  Timestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getStorage,
+  ref,
+  uploadString,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
-const TABLES = {
-  ROOMS: 218,
-  PLAYERS: 0,
-  EVIDENCE: 0,
-  MESSAGES: 0
-};
-
-function tableUrl(tableId) {
-  return API_URL + '/databases/' + DATABASE_ID + '/tables/' + tableId + '/records';
-}
-
-async function request(method, tableId, body, recordId) {
-  let url = tableUrl(tableId);
-  if (recordId) url += '/' + recordId;
-  const options = {
-    method: method,
-    headers: {
-      'Authorization': 'Bearer ' + TOKEN,
-      'Content-Type': 'application/json'
-    }
-  };
-  if (body) options.body = JSON.stringify(body);
-  const res = await fetch(url, options);
-  return await res.json();
-}
+const db = getFirestore(app);
+const storage = getStorage(app);
 
 async function createRoomRecord(roomCode, mode, judgeId) {
-  return request('POST', TABLES.ROOMS, {
+  const ref = collection(db, 'rooms');
+  await addDoc(ref, {
     room_code: roomCode,
     mode: mode,
     status: 'waiting',
     judge_id: judgeId,
-    delete_at: 0,
-    created_at: new Date().toISOString()
+    deleteAt: null,
+    createdAt: serverTimestamp()
   });
+  return { message: 'success' };
 }
 
 async function findRoom(roomCode) {
-  const where = encodeURIComponent('(room_code,eq,' + roomCode + ')');
-  const url = tableUrl(TABLES.ROOMS) + '?where=' + where + '&response_format=names';
-  const res = await fetch(url, {
-    headers: { 'Authorization': 'Bearer ' + TOKEN }
-  });
-  const data = await res.json();
-  return data.data.records[0];
+  const ref = collection(db, 'rooms');
+  const q = query(ref, where('room_code', '==', roomCode));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data() };
 }
 
 async function finishRoom(recordId) {
-  const deleteAt = Math.floor(Date.now() / 1000) + 3600;
-  return request('PUT', TABLES.ROOMS, {
+  const roomRef = doc(db, 'rooms', recordId);
+  const deleteAt = Timestamp.fromDate(new Date(Date.now() + 60 * 60 * 1000));
+  await updateDoc(roomRef, {
     status: 'finished',
-    delete_at: deleteAt
-  }, recordId);
+    deleteAt: deleteAt
+  });
+}
+
+async function deleteRoomRecord(recordId) {
+  await deleteDoc(doc(db, 'rooms', recordId));
 }
 
 async function addPlayerRecord(roomCode, nickname, avatarUrl, role) {
-  return request('POST', TABLES.PLAYERS, {
+  const ref = collection(db, 'players');
+  await addDoc(ref, {
     room_code: roomCode,
     nickname: nickname,
     avatar_url: avatarUrl,
     role: role,
-    joined_at: new Date().toISOString()
+    joinedAt: serverTimestamp()
   });
 }
 
 async function getPlayers(roomCode) {
-  const where = encodeURIComponent('(room_code,eq,' + roomCode + ')');
-  const url = tableUrl(TABLES.PLAYERS) + '?where=' + where + '&response_format=names';
-  const res = await fetch(url, {
-    headers: { 'Authorization': 'Bearer ' + TOKEN }
+  const ref = collection(db, 'players');
+  const q = query(ref, where('room_code', '==', roomCode));
+  const snap = await getDocs(q);
+  return snap.docs.map(function(d) {
+    return { id: d.id, ...d.data() };
   });
-  const data = await res.json();
-  return data.data.records;
 }
 
 async function addEvidenceRecord(roomCode, authorId, title, imageUrl) {
-  return request('POST', TABLES.EVIDENCE, {
+  const ref = collection(db, 'evidence');
+  await addDoc(ref, {
     room_code: roomCode,
     author_id: authorId,
     title: title,
     image_url: imageUrl,
-    created_at: new Date().toISOString()
+    createdAt: serverTimestamp()
   });
 }
 
 async function getEvidence(roomCode) {
-  const where = encodeURIComponent('(room_code,eq,' + roomCode + ')');
-  const url = tableUrl(TABLES.EVIDENCE) + '?where=' + where + '&response_format=names';
-  const res = await fetch(url, {
-    headers: { 'Authorization': 'Bearer ' + TOKEN }
+  const ref = collection(db, 'evidence');
+  const q = query(ref, where('room_code', '==', roomCode));
+  const snap = await getDocs(q);
+  return snap.docs.map(function(d) {
+    return { id: d.id, ...d.data() };
   });
-  const data = await res.json();
-  return data.data.records;
 }
 
 async function sendMessageRecord(roomCode, playerId, nickname, text) {
-  return request('POST', TABLES.MESSAGES, {
+  const ref = collection(db, 'messages');
+  await addDoc(ref, {
     room_code: roomCode,
     player_id: playerId,
     nickname: nickname,
     text: text,
-    created_at: new Date().toISOString()
+    createdAt: serverTimestamp()
   });
 }
 
+async function getMessages(roomCode) {
+  const ref = collection(db, 'messages');
+  const q = query(ref, where('room_code', '==', roomCode));
+  const snap = await getDocs(q);
+  const list = snap.docs.map(function(d) {
+    return { id: d.id, ...d.data() };
+  });
+  list.sort(function(a, b) {
+    const ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+    const tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+    return ta - tb;
+  });
+  return list;
+}
+
+async function uploadImage(path, dataUrl) {
+  const imageRef = ref(storage, path);
+  await uploadString(imageRef, dataUrl, 'data_url');
+  return await getDownloadURL(imageRef);
+}
 async function getMessages(roomCode) {
   const where = encodeURIComponent('(room_code,eq,' + roomCode + ')');
   const url = tableUrl(TABLES.MESSAGES) + '?where=' + where + '&response_format=names';
