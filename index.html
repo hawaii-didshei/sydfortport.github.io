@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Суд</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="screen-menu" class="screen">
+    <h1>Суд</h1>
+    <button onclick="showCreate()">Создать суд</button>
+    <button onclick="showJoin()">Войти в суд</button>
+  </div>
+
+  <div id="screen-create" class="screen hidden">
+    <h1>Создать суд</h1>
+    <label>Режим</label>
+    <select id="create-mode">
+      <option value="with_victim">С жертвой</option>
+      <option value="only_defendant">Только подсудимый</option>
+    </select>
+    <button onclick="createRoom()">Создать</button>
+  </div>
+
+  <div id="screen-join" class="screen hidden">
+    <h1>Вход в суд</h1>
+    <label>Код комнаты</label>
+    <input id="join-code" type="text" />
+    <label>Ник</label>
+    <input id="join-nick" type="text" />
+    <label>Роль</label>
+    <select id="join-role">
+      <option value="spectator">Зритель</option>
+      <option value="witness">Свидетель</option>
+      <option value="prosecutor">Прокурор</option>
+      <option value="advocate">Адвокат</option>
+      <option value="defendant">Подсудимый</option>
+      <option value="victim">Жертва</option>
+    </select>
+    <label>Аватарка</label>
+    <input id="join-avatar" type="file" accept="image/*" />
+    <button onclick="joinRoom()">Войти</button>
+    <p id="join-error"></p>
+  </div>
+
+  <div id="screen-court" class="screen hidden">
+    <div id="court-room">
+      <div id="players-layer"></div>
+      <div id="spectators-box" class="hidden">
+        <h3>Зрители и свидетели</h3>
+        <div id="spectators-list"></div>
+      </div>
+      <button id="btn-invite" onclick="copyInvite()">Пригласить</button>
+      <button id="btn-evidence" onclick="toggleEvidence()">Улики</button>
+      <button id="btn-chat" onclick="toggleChat()">Чат</button>
+      <button id="btn-finish" class="hidden" onclick="finishCourt()">Огласить приговор</button>
+    </div>
+
+    <div id="evidence-modal" class="modal hidden">
+      <div class="modal-box">
+        <button class="close" onclick="toggleEvidence()">X</button>
+        <h2>Улики</h2>
+        <div id="evidence-form" class="hidden">
+          <input id="evidence-title" type="text" placeholder="Подпись" />
+          <input id="evidence-file" type="file" accept="image/*" />
+          <button onclick="addEvidence()">Добавить</button>
+        </div>
+        <div id="evidence-list"></div>
+      </div>
+    </div>
+
+    <div id="chat-modal" class="chat hidden">
+      <div class="chat-header">
+        <span>Чат</span>
+        <button onclick="toggleChat()">X</button>
+      </div>
+      <div id="chat-list"></div>
+      <div class="chat-input">
+        <input id="chat-input" type="text" onkeydown="if(event.key==='Enter') sendMessage()" />
+        <button onclick="sendMessage()">Отправить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
