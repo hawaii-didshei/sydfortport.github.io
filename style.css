@@ -65,13 +65,39 @@ button:hover {
   margin-top: 10px;
 }
 
+#create-error,
+#join-error {
+  color: #ff4444;
+  font-size: 13px;
+  margin-top: 10px;
+  text-align: center;
+}
+
 #court-room {
   position: relative;
   width: 100vw;
   height: 100vh;
-  background-image: url('court-bg.png');
+  background-image: url('комната суда фон.png');
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
+}
+
+#court-tree {
+  position: absolute;
+  inset: 0;
+  background-image: url('дерево.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 1;
+}
+
+#players-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
 }
 
 .player-slot {
@@ -109,6 +135,7 @@ button:hover {
   left: 50%;
   transform: translateX(-50%);
   width: auto;
+  z-index: 4;
 }
 
 #btn-finish {
@@ -118,6 +145,7 @@ button:hover {
   transform: translateX(-50%);
   width: auto;
   background: #b8860b;
+  z-index: 4;
 }
 
 #btn-evidence {
@@ -126,6 +154,19 @@ button:hover {
   left: 24px;
   width: auto;
   background: #8b0000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 4;
+}
+
+#btn-evidence:hover {
+  background: #a00000;
+}
+
+#btn-evidence img {
+  width: 24px;
+  height: 24px;
 }
 
 #btn-chat {
@@ -133,6 +174,15 @@ button:hover {
   bottom: 24px;
   right: 24px;
   width: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 4;
+}
+
+#btn-chat img {
+  width: 24px;
+  height: 24px;
 }
 
 #spectators-box {
@@ -144,6 +194,7 @@ button:hover {
   border: 2px solid #b8860b;
   border-radius: 8px;
   padding: 10px;
+  z-index: 3;
 }
 
 #spectators-box h3 {
