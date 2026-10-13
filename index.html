@@ -22,6 +22,7 @@
       <option value="only_defendant">Только подсудимый</option>
     </select>
     <button onclick="createRoom()">Создать</button>
+    <p id="create-error"></p>
   </div>
 
   <div id="screen-join" class="screen hidden">
@@ -47,14 +48,21 @@
 
   <div id="screen-court" class="screen hidden">
     <div id="court-room">
+      <div id="court-tree"></div>
       <div id="players-layer"></div>
       <div id="spectators-box" class="hidden">
         <h3>Зрители и свидетели</h3>
         <div id="spectators-list"></div>
       </div>
       <button id="btn-invite" onclick="copyInvite()">Пригласить</button>
-      <button id="btn-evidence" onclick="toggleEvidence()">Улики</button>
-      <button id="btn-chat" onclick="toggleChat()">Чат</button>
+      <button id="btn-evidence" onclick="toggleEvidence()">
+        <img src="папка.png" alt="" />
+        Улики
+      </button>
+      <button id="btn-chat" onclick="toggleChat()">
+        <img src="чат.png" alt="" />
+        Чат
+      </button>
       <button id="btn-finish" class="hidden" onclick="finishCourt()">Огласить приговор</button>
     </div>
 
