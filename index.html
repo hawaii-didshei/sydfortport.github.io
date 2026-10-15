@@ -23,12 +23,16 @@
       <option value="with_victim">С жертвой</option>
       <option value="only_defendant">Только подсудимый</option>
     </select>
+    <label>Ник</label>
+    <input id="create-nick" type="text" />
+    <label>Аватарка</label>
+    <input id="create-avatar" type="file" accept="image/*" />
     <button onclick="createRoom()">Создать</button>
     <p id="create-error"></p>
   </div>
 
   <div id="screen-join" class="screen hidden">
-    <h1 id="join-title">Вход в суд</h1>
+    <h1>Вход в суд</h1>
     <label>Код комнаты</label>
     <input id="join-code" type="text" />
     <label>Ник</label>
@@ -52,7 +56,6 @@
 
   <div id="screen-court" class="screen hidden">
     <div id="court-room">
-      <div id="court-tree"></div>
       <div id="players-layer"></div>
       <div id="spectators-box" class="hidden">
         <h3>Зрители и свидетели</h3>
@@ -73,7 +76,7 @@
       <div class="modal-box">
         <button class="close" onclick="toggleEvidence()">X</button>
         <h2>Улики</h2>
-        <div id="evidence-form" class="hidden">
+        <div id="evidence-form">
           <input id="evidence-title" type="text" placeholder="Подпись" />
           <input id="evidence-file" type="file" accept="image/*" />
           <button onclick="addEvidence()">Добавить</button>
@@ -95,6 +98,9 @@
     </div>
   </div>
 
+  <script type="module" src="app.js"></script>
+</body>
+</html>
   <script type="module" src="app.js"></script>
 </body>
 </html>
