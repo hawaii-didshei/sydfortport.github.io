@@ -16,6 +16,16 @@ let currentRoomRecordId = null;
 let refreshTimer = null;
 let isJudgeFlow = false;
 
+const ROLE_LABELS = {
+  judge: 'Судья',
+  prosecutor: 'Прокурор',
+  advocate: 'Адвокат',
+  victim: 'Жертва',
+  defendant: 'Подсудимый',
+  witness: 'Свидетель',
+  spectator: 'Зритель'
+};
+
 window.showCreate = function() {
   document.getElementById('create-error').textContent = '';
   show('screen-create');
@@ -148,7 +158,7 @@ function renderPlayers(players) {
     defendant:  { top: '65%', left: '85%' }
   };
 
-  const labels = {
+  const slotLabels = {
     judge: 'СУДЬЯ',
     prosecutor: 'ПРОКУРОР',
     advocate: 'АДВОКАТ',
@@ -172,7 +182,7 @@ function renderPlayers(players) {
     el.innerHTML =
       '<img src="' + p.avatar_url + '" />' +
       '<span class="name">' + p.nickname + '</span>' +
-      '<span class="role">' + labels[p.role] + '</span>';
+      '<span class="role">' + slotLabels[p.role] + '</span>';
     layer.appendChild(el);
   });
 
@@ -186,7 +196,9 @@ function renderPlayers(players) {
     spectators.forEach(function(s) {
       const el = document.createElement('div');
       el.className = 'spectator';
-      el.innerHTML = '<img src="' + s.avatar_url + '" /><span>' + s.nickname + '</span>';
+      el.innerHTML =
+        '<img src="' + s.avatar_url + '" />' +
+        '<span>' + s.nickname + ' (' + ROLE_LABELS[s.role] + ')</span>';
       list.appendChild(el);
     });
   }
@@ -200,14 +212,13 @@ function renderEvidence(evidence) {
     el.className = 'evidence-card';
     el.innerHTML =
       '<img src="' + ev.image_url + '" />' +
-      '<p>' + ev.title + '</p>';
+      '<p>' + ev.title + '</p>' +
+      '<p style="font-size:11px;color:#888">' + (ev.author_nickname || '') + '</p>';
     list.appendChild(el);
   });
 
-  const canAdd = ['prosecutor', 'advocate', 'victim'].indexOf(currentUser.role) !== -1;
   const form = document.getElementById('evidence-form');
-  if (canAdd) form.classList.remove('hidden');
-  else form.classList.add('hidden');
+  form.classList.remove('hidden');
 
   const finishBtn = document.getElementById('btn-finish');
   if (currentUser.role === 'judge') finishBtn.classList.remove('hidden');
@@ -220,7 +231,10 @@ function renderMessages(messages) {
   messages.forEach(function(m) {
     const el = document.createElement('div');
     el.className = 'chat-message';
-    el.innerHTML = '<span class="who">' + m.nickname + ': </span>' + m.text;
+    const roleName = ROLE_LABELS[m.role] || '';
+    el.innerHTML =
+      '<span class="who">' + m.nickname + ' (' + roleName + '): </span>' +
+      m.text;
     list.appendChild(el);
   });
   list.scrollTop = list.scrollHeight;
@@ -239,7 +253,14 @@ window.addEvidence = async function() {
   const file = document.getElementById('evidence-file').files[0];
   if (!title || !file) return;
   const imageUrl = await cropToSquare(file, 400, 0.6);
-  await addEvidenceRecord(currentRoomCode, currentUser.player_id, title, imageUrl);
+  await addEvidenceRecord(
+    currentRoomCode,
+    currentUser.player_id,
+    currentUser.nickname,
+    currentUser.role,
+    title,
+    imageUrl
+  );
   document.getElementById('evidence-title').value = '';
   document.getElementById('evidence-file').value = '';
   refreshAll();
@@ -249,7 +270,13 @@ window.sendMessage = async function() {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
   if (!text) return;
-  await sendMessageRecord(currentRoomCode, currentUser.player_id, currentUser.nickname, text);
+  await sendMessageRecord(
+    currentRoomCode,
+    currentUser.player_id,
+    currentUser.nickname,
+    currentUser.role,
+    text
+  );
   input.value = '';
   refreshAll();
 };
