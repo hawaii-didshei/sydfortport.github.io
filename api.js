@@ -64,11 +64,13 @@ export async function getPlayers(roomCode) {
   });
 }
 
-export async function addEvidenceRecord(roomCode, authorId, title, imageUrl) {
+export async function addEvidenceRecord(roomCode, authorId, nickname, role, title, imageUrl) {
   const col = collection(db, 'evidence');
   await addDoc(col, {
     room_code: roomCode,
     author_id: authorId,
+    author_nickname: nickname,
+    author_role: role,
     title: title,
     image_url: imageUrl,
     createdAt: serverTimestamp()
@@ -84,12 +86,13 @@ export async function getEvidence(roomCode) {
   });
 }
 
-export async function sendMessageRecord(roomCode, playerId, nickname, text) {
+export async function sendMessageRecord(roomCode, playerId, nickname, role, text) {
   const col = collection(db, 'messages');
   await addDoc(col, {
     room_code: roomCode,
     player_id: playerId,
     nickname: nickname,
+    role: role,
     text: text,
     createdAt: serverTimestamp()
   });
