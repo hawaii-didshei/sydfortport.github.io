@@ -8,19 +8,11 @@ import {
   where,
   doc,
   updateDoc,
-  deleteDoc,
   serverTimestamp,
   Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import {
-  getStorage,
-  ref,
-  uploadString,
-  getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 export async function createRoomRecord(roomCode, mode, judgeId) {
   const col = collection(db, 'rooms');
@@ -32,7 +24,6 @@ export async function createRoomRecord(roomCode, mode, judgeId) {
     deleteAt: null,
     createdAt: serverTimestamp()
   });
-  return { message: 'success' };
 }
 
 export async function findRoom(roomCode) {
@@ -51,10 +42,6 @@ export async function finishRoom(recordId) {
     status: 'finished',
     deleteAt: deleteAt
   });
-}
-
-export async function deleteRoomRecord(recordId) {
-  await deleteDoc(doc(db, 'rooms', recordId));
 }
 
 export async function addPlayerRecord(roomCode, nickname, avatarUrl, role) {
@@ -121,10 +108,4 @@ export async function getMessages(roomCode) {
     return ta - tb;
   });
   return list;
-}
-
-export async function uploadImage(path, dataUrl) {
-  const imageRef = ref(storage, path);
-  await uploadString(imageRef, dataUrl, 'data_url');
-  return await getDownloadURL(imageRef);
 }
