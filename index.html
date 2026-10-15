@@ -57,29 +57,35 @@
   <div id="screen-court" class="screen hidden">
     <div id="court-room">
       <div id="players-layer"></div>
+      <div id="room-code-box" onclick="copyRoomCode()">КОД: ...</div>
+
+      <div id="top-buttons">
+        <button id="btn-evidence" onclick="toggleEvidence()">
+          <img src="папка.png" alt="" />
+        </button>
+        <button id="btn-chat" onclick="toggleChat()">
+          <img src="чат.png" alt="" />
+        </button>
+      </div>
+
       <div id="spectators-box" class="hidden">
         <h3>Зрители и свидетели</h3>
         <div id="spectators-list"></div>
       </div>
-      <button id="btn-evidence" onclick="toggleEvidence()">
-        <img src="папка.png" alt="" />
-        Улики
-      </button>
-      <button id="btn-chat" onclick="toggleChat()">
-        <img src="чат.png" alt="" />
-        Чат
-      </button>
-      <button id="btn-finish" class="hidden" onclick="finishCourt()">Огласить приговор</button>
+
+      <button id="btn-finish" class="hidden" onclick="openVerdict()">Огласить приговор</button>
+
+      <div id="verdict-banner" class="hidden"></div>
     </div>
 
     <div id="evidence-modal" class="modal hidden">
-      <div class="modal-box">
+      <div class="modal-box no-bg">
         <button class="close" onclick="toggleEvidence()">X</button>
         <h2>Улики</h2>
         <div id="evidence-form">
-          <input id="evidence-title" type="text" placeholder="Подпись" />
+          <input id="evidence-title" type="text" placeholder="Подпись к улике" />
           <input id="evidence-file" type="file" accept="image/*" />
-          <button onclick="addEvidence()">Добавить</button>
+          <button class="btn-plus" onclick="addEvidence()">+</button>
         </div>
         <div id="evidence-list"></div>
       </div>
@@ -96,11 +102,26 @@
         <button onclick="sendMessage()">Отправить</button>
       </div>
     </div>
+
+    <div id="verdict-modal" class="modal hidden">
+      <div class="modal-box verdict-box">
+        <h2>Оглашение приговора</h2>
+        <textarea id="verdict-text" placeholder="Введите приговор"></textarea>
+        <button onclick="confirmVerdict()">Далее</button>
+      </div>
+    </div>
+
+    <div id="verdict-confirm" class="modal hidden">
+      <div class="modal-box verdict-box">
+        <h2>Вы точно хотите огласить приговор?</h2>
+        <div class="verdict-actions">
+          <button onclick="cancelVerdict()">Нет</button>
+          <button onclick="publishVerdict()">Да</button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <script type="module" src="app.js"></script>
-</body>
-</html>
   <script type="module" src="app.js"></script>
 </body>
 </html>
