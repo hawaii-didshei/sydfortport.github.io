@@ -7,8 +7,7 @@ import {
   addEvidenceRecord,
   getEvidence,
   sendMessageRecord,
-  getMessages,
-  uploadImage
+  getMessages
 } from './api.js';
 
 let currentRoomCode = '';
@@ -100,8 +99,7 @@ window.joinRoom = async function() {
     }
 
     const playerId = (role === 'judge' ? 'judge-' : 'player-') + Date.now();
-    const dataUrl = await cropToSquare(file);
-    const avatarUrl = await uploadImage('avatars/' + playerId + '.jpg', dataUrl);
+    const avatarUrl = await cropToSquare(file, 256, 0.7);
     await addPlayerRecord(code, nick, avatarUrl, role);
 
     currentRoomCode = code;
@@ -240,9 +238,7 @@ window.addEvidence = async function() {
   const title = document.getElementById('evidence-title').value.trim();
   const file = document.getElementById('evidence-file').files[0];
   if (!title || !file) return;
-  const dataUrl = await cropToSquare(file);
-  const path = 'evidence/' + currentRoomCode + '-' + Date.now() + '.jpg';
-  const imageUrl = await uploadImage(path, dataUrl);
+  const imageUrl = await cropToSquare(file, 400, 0.6);
   await addEvidenceRecord(currentRoomCode, currentUser.player_id, title, imageUrl);
   document.getElementById('evidence-title').value = '';
   document.getElementById('evidence-file').value = '';
@@ -264,7 +260,7 @@ window.finishCourt = async function() {
   alert('Суд завершён. Комната удалится в течение 24 часов.');
 };
 
-function cropToSquare(file) {
+function cropToSquare(file, maxSize, quality) {
   return new Promise(function(resolve) {
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -279,10 +275,10 @@ function cropToSquare(file) {
         const oy = (img.height - size) / 2;
         ctx.drawImage(img, ox, oy, size, size, 0, 0, size, size);
         const small = document.createElement('canvas');
-        small.width = 256;
-        small.height = 256;
-        small.getContext('2d').drawImage(canvas, 0, 0, 256, 256);
-        resolve(small.toDataURL('image/jpeg', 0.7));
+        small.width = maxSize;
+        small.height = maxSize;
+        small.getContext('2d').drawImage(canvas, 0, 0, maxSize, maxSize);
+        resolve(small.toDataURL('image/jpeg', quality));
       };
       img.src = e.target.result;
     };
