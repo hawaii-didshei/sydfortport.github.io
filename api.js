@@ -8,6 +8,7 @@ import {
   where,
   doc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
   Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -42,6 +43,24 @@ export async function finishRoom(recordId) {
     status: 'finished',
     deleteAt: deleteAt
   });
+}
+
+async function deleteCollectionByRoom(collectionName, roomCode) {
+  const col = collection(db, collectionName);
+  const q = query(col, where('room_code', '==', roomCode));
+  const snap = await getDocs(q);
+  const promises = [];
+  snap.docs.forEach(function(d) {
+    promises.push(deleteDoc(doc(db, collectionName, d.id)));
+  });
+  await Promise.all(promises);
+}
+
+export async function deleteRoomData(roomCode, roomRecordId) {
+  await deleteCollectionByRoom('players', roomCode);
+  await deleteCollectionByRoom('evidence', roomCode);
+  await deleteCollectionByRoom('messages', roomCode);
+  await deleteDoc(doc(db, 'rooms', roomRecordId));
 }
 
 export async function addPlayerRecord(roomCode, nickname, avatarUrl, role) {
@@ -111,4 +130,12 @@ export async function getMessages(roomCode) {
     return ta - tb;
   });
   return list;
+}
+
+export async function getRoomStatus(roomCode) {
+  const col = collection(db, 'rooms');
+  const q = query(col, where('room_code', '==', roomCode));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  return snap.docs[0].data().status || 'waiting';
 }
