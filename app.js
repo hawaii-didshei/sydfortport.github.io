@@ -26,6 +26,7 @@ window.showJoin = function() {
   if (!isJudgeFlow) {
     document.getElementById('join-title').textContent = 'Вход в суд';
     document.getElementById('join-code').disabled = false;
+    document.getElementById('join-code').value = '';
     document.getElementById('join-role-field').classList.remove('hidden');
     document.getElementById('join-role').value = 'spectator';
     document.getElementById('join-nick').value = '';
@@ -40,6 +41,13 @@ function show(id) {
     el.classList.add('hidden');
   });
   document.getElementById(id).classList.remove('hidden');
+
+  const bg = document.getElementById('bg-blur');
+  if (id === 'screen-court') {
+    bg.classList.add('hidden');
+  } else {
+    bg.classList.remove('hidden');
+  }
 }
 
 function randomCode() {
@@ -256,12 +264,6 @@ window.finishCourt = async function() {
   alert('Суд завершён. Комната удалится в течение 24 часов.');
 };
 
-window.copyInvite = function() {
-  const link = window.location.origin + window.location.pathname + '?room=' + currentRoomCode;
-  navigator.clipboard.writeText(link);
-  alert('Ссылка скопирована: ' + link);
-};
-
 function cropToSquare(file) {
   return new Promise(function(resolve) {
     const reader = new FileReader();
@@ -289,13 +291,5 @@ function cropToSquare(file) {
 }
 
 window.addEventListener('load', function() {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('room');
-  if (code) {
-    document.getElementById('join-code').value = code;
-    isJudgeFlow = false;
-    showJoin();
-  } else {
-    show('screen-menu');
-  }
+  show('screen-menu');
 });
