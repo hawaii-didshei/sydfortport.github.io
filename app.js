@@ -145,6 +145,7 @@ window.joinRoom = async function() {
 
 function enterCourt() {
   show('screen-court');
+  document.getElementById('room-code-box').textContent = 'КОД: ' + currentRoomCode;
   refreshAll();
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(refreshAll, 5000);
@@ -216,7 +217,7 @@ function renderEvidence(evidence) {
     el.innerHTML =
       '<img src="' + ev.image_url + '" loading="lazy" />' +
       '<p>' + ev.title + '</p>' +
-      '<p style="font-size:11px;color:#888">' +
+      '<p style="font-size:11px">' +
         (ev.author_nickname || '') +
         (ev.author_role ? ' (' + ROLE_LABELS[ev.author_role] + ')' : '') +
       '</p>';
@@ -284,10 +285,56 @@ window.sendMessage = async function() {
   refreshAll();
 };
 
-window.finishCourt = async function() {
-  if (!confirm('Огласить приговор?')) return;
+window.openVerdict = function() {
+  document.getElementById('verdict-text').value = '';
+  document.getElementById('verdict-modal').classList.remove('hidden');
+};
+
+window.confirmVerdict = function() {
+  const text = document.getElementById('verdict-text').value.trim();
+  if (!text) return;
+  document.getElementById('verdict-modal').classList.add('hidden');
+  document.getElementById('verdict-confirm').classList.remove('hidden');
+};
+
+window.cancelVerdict = function() {
+  document.getElementById('verdict-confirm').classList.add('hidden');
+};
+
+window.publishVerdict = async function() {
+  const text = document.getElementById('verdict-text').value.trim();
+  if (!text) return;
+
+  document.getElementById('verdict-confirm').classList.add('hidden');
+
+  const banner = document.getElementById('verdict-banner');
+  banner.textContent = 'ПРИГОВОР: ' + text;
+  banner.classList.remove('hidden');
+
+  await sendMessageRecord(
+    currentRoomCode,
+    'judge',
+    'СУД',
+    'judge',
+    'Оглашает приговор: ' + text
+  );
+
   await finishRoom(currentRoomRecordId);
-  alert('Суд завершён. Комната удалится в течение 24 часов.');
+
+  const finishBtn = document.getElementById('btn-finish');
+  finishBtn.classList.add('hidden');
+
+  refreshAll();
+};
+
+window.copyRoomCode = function() {
+  navigator.clipboard.writeText(currentRoomCode);
+  const box = document.getElementById('room-code-box');
+  const old = box.textContent;
+  box.textContent = 'СКОПИРОВАНО';
+  setTimeout(function() {
+    box.textContent = old;
+  }, 1500);
 };
 
 function cropToSquare(file, maxSize, quality) {
