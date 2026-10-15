@@ -57,7 +57,11 @@
   <div id="screen-court" class="screen hidden">
     <div id="court-room">
       <div id="players-layer"></div>
-      <div id="room-code-box" onclick="copyRoomCode()">КОД: ...</div>
+
+      <div id="code-row">
+        <div id="room-code-box" onclick="copyRoomCode()">КОД: ...</div>
+        <button id="btn-hide-code" onclick="toggleCode()">Скрыть</button>
+      </div>
 
       <div id="top-buttons">
         <button id="btn-evidence" onclick="toggleEvidence()">
@@ -119,6 +123,10 @@
           <button onclick="publishVerdict()">Да</button>
         </div>
       </div>
+    </div>
+
+    <div id="image-modal" class="modal hidden" onclick="closeImage()">
+      <img id="image-modal-img" src="" alt="" />
     </div>
   </div>
 
