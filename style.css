@@ -59,11 +59,6 @@ input, select {
   border-radius: 4px;
 }
 
-input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 button {
   cursor: pointer;
   border: none;
@@ -103,17 +98,6 @@ button:hover {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-}
-
-#court-tree {
-  position: absolute;
-  inset: 0;
-  background-image: url('дерево.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  pointer-events: none;
-  z-index: 1;
 }
 
 #players-layer {
@@ -301,6 +285,7 @@ button:hover {
   height: 100px;
   object-fit: cover;
   border-radius: 4px;
+  loading: lazy;
 }
 
 .evidence-card p {
