@@ -14,7 +14,6 @@ let currentRoomCode = '';
 let currentUser = null;
 let currentRoomRecordId = null;
 let refreshTimer = null;
-let isJudgeFlow = false;
 
 const ROLE_LABELS = {
   judge: 'Судья',
@@ -26,22 +25,29 @@ const ROLE_LABELS = {
   spectator: 'Зритель'
 };
 
+const SLOTS = {
+  judge:      { top: '25%', left: '50%' },
+  prosecutor: { top: '55%', left: '25%' },
+  advocate:   { top: '65%', left: '15%' },
+  victim:     { top: '55%', left: '75%' },
+  defendant:  { top: '65%', left: '85%' }
+};
+
+const SLOT_LABELS = {
+  judge: 'СУДЬЯ',
+  prosecutor: 'ПРОКУРОР',
+  advocate: 'АДВОКАТ',
+  victim: 'ЖЕРТВА',
+  defendant: 'ПОДСУДИМЫЙ'
+};
+
 window.showCreate = function() {
   document.getElementById('create-error').textContent = '';
   show('screen-create');
 };
 
 window.showJoin = function() {
-  if (!isJudgeFlow) {
-    document.getElementById('join-title').textContent = 'Вход в суд';
-    document.getElementById('join-code').disabled = false;
-    document.getElementById('join-code').value = '';
-    document.getElementById('join-role-field').classList.remove('hidden');
-    document.getElementById('join-role').value = 'spectator';
-    document.getElementById('join-nick').value = '';
-    document.getElementById('join-avatar').value = '';
-    document.getElementById('join-error').textContent = '';
-  }
+  document.getElementById('join-error').textContent = '';
   show('screen-join');
 };
 
@@ -66,23 +72,34 @@ function randomCode() {
 window.createRoom = async function() {
   const err = document.getElementById('create-error');
   err.textContent = '';
+
+  const mode = document.getElementById('create-mode').value;
+  const nick = document.getElementById('create-nick').value.trim();
+  const file = document.getElementById('create-avatar').files[0];
+
+  if (!nick || !file) {
+    err.textContent = 'Введи ник и выбери аватарку';
+    return;
+  }
+
   try {
-    const mode = document.getElementById('create-mode').value;
     const roomCode = randomCode();
     const judgeId = 'judge-' + Date.now();
     await createRoomRecord(roomCode, mode, judgeId);
+    const room = await findRoom(roomCode);
 
-    isJudgeFlow = true;
-    document.getElementById('join-title').textContent = 'Создание судьи';
-    document.getElementById('join-code').value = roomCode;
-    document.getElementById('join-code').disabled = true;
-    document.getElementById('join-role-field').classList.add('hidden');
-    document.getElementById('join-role').value = 'judge';
-    document.getElementById('join-nick').value = '';
-    document.getElementById('join-avatar').value = '';
-    document.getElementById('join-error').textContent = '';
+    const avatarUrl = await cropToSquare(file, 256, 0.7);
+    await addPlayerRecord(roomCode, nick, avatarUrl, 'judge');
 
-    show('screen-join');
+    currentRoomCode = roomCode;
+    currentRoomRecordId = room.id;
+    currentUser = {
+      player_id: judgeId,
+      nickname: nick,
+      role: 'judge',
+      avatar_url: avatarUrl
+    };
+    enterCourt();
   } catch (e) {
     err.textContent = 'Ошибка: ' + e.message;
   }
@@ -108,7 +125,7 @@ window.joinRoom = async function() {
       return;
     }
 
-    const playerId = (role === 'judge' ? 'judge-' : 'player-') + Date.now();
+    const playerId = 'player-' + Date.now();
     const avatarUrl = await cropToSquare(file, 256, 0.7);
     await addPlayerRecord(code, nick, avatarUrl, role);
 
@@ -135,12 +152,14 @@ function enterCourt() {
 
 async function refreshAll() {
   try {
-    const players = await getPlayers(currentRoomCode);
-    const evidence = await getEvidence(currentRoomCode);
-    const messages = await getMessages(currentRoomCode);
-    renderPlayers(players);
-    renderEvidence(evidence);
-    renderMessages(messages);
+    const results = await Promise.all([
+      getPlayers(currentRoomCode),
+      getEvidence(currentRoomCode),
+      getMessages(currentRoomCode)
+    ]);
+    renderPlayers(results[0]);
+    renderEvidence(results[1]);
+    renderMessages(results[2]);
   } catch (e) {
     console.log('refresh error', e);
   }
@@ -150,26 +169,10 @@ function renderPlayers(players) {
   const layer = document.getElementById('players-layer');
   layer.innerHTML = '';
 
-  const slots = {
-    judge:      { top: '25%', left: '50%' },
-    prosecutor: { top: '55%', left: '25%' },
-    advocate:   { top: '65%', left: '15%' },
-    victim:     { top: '55%', left: '75%' },
-    defendant:  { top: '65%', left: '85%' }
-  };
-
-  const slotLabels = {
-    judge: 'СУДЬЯ',
-    prosecutor: 'ПРОКУРОР',
-    advocate: 'АДВОКАТ',
-    victim: 'ЖЕРТВА',
-    defendant: 'ПОДСУДИМЫЙ'
-  };
-
   const spectators = [];
 
   players.forEach(function(p) {
-    const slot = slots[p.role];
+    const slot = SLOTS[p.role];
     if (!slot) {
       spectators.push(p);
       return;
@@ -180,9 +183,9 @@ function renderPlayers(players) {
     el.style.left = slot.left;
     el.style.transform = 'translateX(-50%)';
     el.innerHTML =
-      '<img src="' + p.avatar_url + '" />' +
+      '<img src="' + p.avatar_url + '" loading="lazy" />' +
       '<span class="name">' + p.nickname + '</span>' +
-      '<span class="role">' + slotLabels[p.role] + '</span>';
+      '<span class="role">' + SLOT_LABELS[p.role] + '</span>';
     layer.appendChild(el);
   });
 
@@ -197,7 +200,7 @@ function renderPlayers(players) {
       const el = document.createElement('div');
       el.className = 'spectator';
       el.innerHTML =
-        '<img src="' + s.avatar_url + '" />' +
+        '<img src="' + s.avatar_url + '" loading="lazy" />' +
         '<span>' + s.nickname + ' (' + ROLE_LABELS[s.role] + ')</span>';
       list.appendChild(el);
     });
@@ -211,14 +214,14 @@ function renderEvidence(evidence) {
     const el = document.createElement('div');
     el.className = 'evidence-card';
     el.innerHTML =
-      '<img src="' + ev.image_url + '" />' +
+      '<img src="' + ev.image_url + '" loading="lazy" />' +
       '<p>' + ev.title + '</p>' +
-      '<p style="font-size:11px;color:#888">' + (ev.author_nickname || '') + '</p>';
+      '<p style="font-size:11px;color:#888">' +
+        (ev.author_nickname || '') +
+        (ev.author_role ? ' (' + ROLE_LABELS[ev.author_role] + ')' : '') +
+      '</p>';
     list.appendChild(el);
   });
-
-  const form = document.getElementById('evidence-form');
-  form.classList.remove('hidden');
 
   const finishBtn = document.getElementById('btn-finish');
   if (currentUser.role === 'judge') finishBtn.classList.remove('hidden');
