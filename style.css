@@ -8,14 +8,28 @@ body {
   font-family: Arial, sans-serif;
   background: #1a1a1a;
   color: #fff;
+  min-height: 100vh;
+}
+
+#bg-blur {
+  position: fixed;
+  inset: 0;
+  background-image: url('комната суда фон.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(8px) brightness(0.5);
+  z-index: -1;
 }
 
 .screen {
   max-width: 480px;
   margin: 60px auto;
   padding: 24px;
-  background: #1e1e1e;
+  background: rgba(30, 30, 30, 0.85);
   border-radius: 8px;
+  position: relative;
+  z-index: 2;
 }
 
 .hidden {
@@ -83,9 +97,8 @@ button:hover {
 }
 
 #court-room {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
+  position: fixed;
+  inset: 0;
   background-image: url('комната суда фон.png');
   background-size: cover;
   background-position: center;
@@ -138,18 +151,9 @@ button:hover {
   color: #f0c040;
 }
 
-#btn-invite {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: auto;
-  z-index: 4;
-}
-
 #btn-finish {
   position: absolute;
-  bottom: 80px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   width: auto;
