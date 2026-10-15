@@ -2,18 +2,21 @@ import {
   createRoomRecord,
   findRoom,
   finishRoom,
+  deleteRoomData,
   addPlayerRecord,
   getPlayers,
   addEvidenceRecord,
   getEvidence,
   sendMessageRecord,
-  getMessages
+  getMessages,
+  getRoomStatus
 } from './api.js';
 
 let currentRoomCode = '';
 let currentUser = null;
 let currentRoomRecordId = null;
 let refreshTimer = null;
+let roomFinished = false;
 
 const ROLE_LABELS = {
   judge: 'Судья',
@@ -41,6 +44,8 @@ const SLOT_LABELS = {
   defendant: 'ПОДСУДИМЫЙ'
 };
 
+const CAN_ADD_EVIDENCE = ['judge', 'prosecutor', 'advocate', 'victim'];
+
 window.showCreate = function() {
   document.getElementById('create-error').textContent = '';
   show('screen-create');
@@ -63,6 +68,29 @@ function show(id) {
   } else {
     bg.classList.remove('hidden');
   }
+}
+
+function backToMenu() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+  currentRoomCode = '';
+  currentUser = null;
+  currentRoomRecordId = null;
+  roomFinished = false;
+  document.getElementById('players-layer').innerHTML = '';
+  document.getElementById('evidence-list').innerHTML = '';
+  document.getElementById('chat-list').innerHTML = '';
+  document.getElementById('spectators-list').innerHTML = '';
+  document.getElementById('spectators-box').classList.add('hidden');
+  document.getElementById('verdict-banner').classList.add('hidden');
+  document.getElementById('evidence-modal').classList.add('hidden');
+  document.getElementById('chat-modal').classList.add('hidden');
+  document.getElementById('verdict-modal').classList.add('hidden');
+  document.getElementById('verdict-confirm').classList.add('hidden');
+  document.getElementById('image-modal').classList.add('hidden');
+  show('screen-menu');
 }
 
 function randomCode() {
@@ -99,6 +127,7 @@ window.createRoom = async function() {
       role: 'judge',
       avatar_url: avatarUrl
     };
+    roomFinished = false;
     enterCourt();
   } catch (e) {
     err.textContent = 'Ошибка: ' + e.message;
@@ -137,6 +166,7 @@ window.joinRoom = async function() {
       role: role,
       avatar_url: avatarUrl
     };
+    roomFinished = false;
     enterCourt();
   } catch (e) {
     err.textContent = 'Ошибка: ' + e.message;
@@ -148,11 +178,17 @@ function enterCourt() {
   document.getElementById('room-code-box').textContent = 'КОД: ' + currentRoomCode;
   refreshAll();
   if (refreshTimer) clearInterval(refreshTimer);
-  refreshTimer = setInterval(refreshAll, 5000);
+  refreshTimer = setInterval(refreshAll, 4000);
 }
 
 async function refreshAll() {
+  if (!currentRoomCode) return;
   try {
+    const status = await getRoomStatus(currentRoomCode);
+    if (status === 'finished') {
+      backToMenu();
+      return;
+    }
     const results = await Promise.all([
       getPlayers(currentRoomCode),
       getEvidence(currentRoomCode),
@@ -214,6 +250,7 @@ function renderEvidence(evidence) {
   evidence.forEach(function(ev) {
     const el = document.createElement('div');
     el.className = 'evidence-card';
+    el.onclick = function() { openImage(ev.image_url); };
     el.innerHTML =
       '<img src="' + ev.image_url + '" loading="lazy" />' +
       '<p>' + ev.title + '</p>' +
@@ -224,9 +261,19 @@ function renderEvidence(evidence) {
     list.appendChild(el);
   });
 
+  const form = document.getElementById('evidence-form');
+  if (currentUser && CAN_ADD_EVIDENCE.indexOf(currentUser.role) !== -1 && !roomFinished) {
+    form.classList.remove('hidden');
+  } else {
+    form.classList.add('hidden');
+  }
+
   const finishBtn = document.getElementById('btn-finish');
-  if (currentUser.role === 'judge') finishBtn.classList.remove('hidden');
-  else finishBtn.classList.add('hidden');
+  if (currentUser && currentUser.role === 'judge' && !roomFinished) {
+    finishBtn.classList.remove('hidden');
+  } else {
+    finishBtn.classList.add('hidden');
+  }
 }
 
 function renderMessages(messages) {
@@ -253,6 +300,7 @@ window.toggleChat = function() {
 };
 
 window.addEvidence = async function() {
+  if (!currentUser || CAN_ADD_EVIDENCE.indexOf(currentUser.role) === -1) return;
   const title = document.getElementById('evidence-title').value.trim();
   const file = document.getElementById('evidence-file').files[0];
   if (!title || !file) return;
@@ -320,11 +368,19 @@ window.publishVerdict = async function() {
   );
 
   await finishRoom(currentRoomRecordId);
+  roomFinished = true;
 
-  const finishBtn = document.getElementById('btn-finish');
-  finishBtn.classList.add('hidden');
+  const roomCode = currentRoomCode;
+  const roomId = currentRoomRecordId;
 
-  refreshAll();
+  setTimeout(function() {
+    deleteRoomData(roomCode, roomId);
+  }, 1500);
+
+  setTimeout(function() {
+    alert('Суд завершён. Все данные удалены.');
+    backToMenu();
+  }, 3000);
 };
 
 window.copyRoomCode = function() {
@@ -335,6 +391,28 @@ window.copyRoomCode = function() {
   setTimeout(function() {
     box.textContent = old;
   }, 1500);
+};
+
+window.toggleCode = function() {
+  const box = document.getElementById('room-code-box');
+  const btn = document.getElementById('btn-hide-code');
+  if (box.style.visibility === 'hidden') {
+    box.style.visibility = 'visible';
+    btn.textContent = 'Скрыть';
+  } else {
+    box.style.visibility = 'hidden';
+    btn.textContent = 'Показать';
+  }
+};
+
+window.openImage = function(url) {
+  document.getElementById('image-modal-img').src = url;
+  document.getElementById('image-modal').classList.remove('hidden');
+};
+
+window.closeImage = function() {
+  document.getElementById('image-modal').classList.add('hidden');
+  document.getElementById('image-modal-img').src = '';
 };
 
 function cropToSquare(file, maxSize, quality) {
